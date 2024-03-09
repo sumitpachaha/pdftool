@@ -1,14 +1,15 @@
 package com.pdftool;
 
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class JavaPDF {
@@ -17,12 +18,15 @@ public class JavaPDF {
         Scanner sc = new Scanner(System.in);
         JavaPDF pdf = new JavaPDF();
         String fileLoc = null;
+        File file = null;
         try{
             System.out.println("Welcome to PDF tool");
             System.out.println("Please enter your choice");
             System.out.println("Press 1 : Create new Empty PDF");
             System.out.println("Press 2 : Create new Hello World Example PDF");
             System.out.println("Press 3 : Fill PDF Form");
+            System.out.println("Press 4 : Split PDF into Multiple pdf");
+            System.out.println("Press 5 : Merge multiple pdf files");
             System.out.println("Press 10 : Exit");
             int input = Integer.parseInt(sc.next());
                 try {
@@ -40,11 +44,35 @@ public class JavaPDF {
                         case 3:
                             System.out.println("Please enter File Location --  for example ('C:\\Users\\sumit\\javapdf\\PDFForm.pdf')");
                             FillPDFForm form = new FillPDFForm();
-                            File file = new File("PDFForm.pdf");
+                            file = new File("PDFForm.pdf");
                             doc = PDDocument.load(file);
                             System.out.println("PDF loaded !!!!");
                             form.fillApplicationFormInPDF(doc);
                             break;
+                        case 4:
+                            System.out.println("Please enter File Location --  for example ('C:\\Users\\sumit\\javapdf\\pdfBoxHelloWorld.pdf')");
+                            fileLoc = sc.next();
+                            doc = PDDocument.load(new File(fileLoc));
+                            System.out.println("PDF loaded !!!!");
+                            pdf.splitPdfPages(doc,fileLoc);
+                        case 5:
+                            System.out.println("Please enter File Location --  for example ('C:\\Users\\sumit\\javapdf\\pdfBoxHelloWorld.pdf')");
+                            List<File> pdfFiles = new ArrayList<>();
+                            fileLoc = sc.next();
+                            file = new File(fileLoc);
+                            pdfFiles.add(file);
+                            do {
+                                System.out.println("\n\nPlease enter Location of PDF file to be merged --  for example ('C:\\Users\\sumit\\javapdf\\pdfBoxHelloWorld.pdf') \nif you don't want to add more files enter -- 1");
+                                fileLoc = sc.next();
+                                if(!fileLoc.equals("1")) {
+                                    file = new File(fileLoc);
+                                    pdfFiles.add(file);
+                                }
+                                else{
+                                    break;
+                                }
+                            }while(!fileLoc.equals("1"));
+                            pdf.mergePdf(pdfFiles);
                         case 10:
                             break;
                         default:
@@ -126,5 +154,28 @@ public class JavaPDF {
             }catch(IOException ioException){
                 ioException.printStackTrace();
             }
+        }
+
+        void splitPdfPages(PDDocument document, String fileLocation) throws IOException {
+            Splitter splitter = new Splitter();
+            List<PDDocument> pageList = splitter.split(document);
+            int ini = 1;
+            for(PDDocument page:pageList){
+                page.save(fileLocation.replace(".pdf","_"+ini+".pdf"));
+                ini++;
+            }
+            System.out.println("PDF files are created successfully.");
+        }
+
+        void mergePdf(List<File> pdfFiles) throws IOException {
+            PDFMergerUtility pdfMerger = new PDFMergerUtility();
+            for(File file:pdfFiles){
+                PDDocument doc = PDDocument.load(file);
+                pdfMerger.addSource(file);
+                doc.close();
+            }
+            pdfMerger.setDestinationFileName("merged.pdf");
+            pdfMerger.mergeDocuments(null);
+            System.out.println("PDF files merged successfully.");
         }
     }
